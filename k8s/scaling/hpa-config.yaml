@@ -1,0 +1,143 @@
+# Configuración de HPAs - CORREGIDA
+# NO incluye SeaweedFS (peligroso para Master, inútil para Volume)
+
+---
+# Deployment de prueba para demostrar el Cluster Autoscaler
+# Esta aplicación SÍ se beneficia del escalado horizontal
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-test
+  namespace: default
+  labels:
+    app: nginx-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-test
+  template:
+    metadata:
+      labels:
+        app: nginx-test
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+---
+# HPA para aplicación de ejemplo (nginx-test)
+# Esta SÍ es apropiada para escalado horizontal
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: nginx-test-hpa
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: nginx-test
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+
+---
+# Deployment de alta carga para pruebas de escalado
+# Útil para probar que el Cluster Autoscaler funciona
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test
+  namespace: default
+  labels:
+    app: stress-test
+spec:
+  replicas: 0  # Inicialmente deshabilitado
+  selector:
+    matchLabels:
+      app: stress-test
+  template:
+    metadata:
+      labels:
+        app: stress-test
+    spec:
+      containers:
+      - name: stress
+        image: polinux/stress
+        command: ["stress"]
+        args: ["--cpu", "1", "--timeout", "300s"]
+        resources:
+          requests:
+            cpu: 800m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+
+---
+# PodDisruptionBudget para aplicación de ejemplo
+# Mantiene disponibilidad durante actualizaciones
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: nginx-test-pdb
+  namespace: default
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: nginx-test
+
+---
+# NOTA IMPORTANTE sobre SeaweedFS:
+# 
+# SeaweedFS Master:
+# - NO usar HPA - requiere escalado manual planificado
+# - Mantener número impar fijo (3, 5, 7) para quórum
+# - Escalado basado en planificación, no en métricas automáticas
+#
+# SeaweedFS Volume:
+# - NO usar HPA basado en CPU/memoria
+# - Escalado basado en capacidad de almacenamiento
+# - Requiere análisis manual de uso de disco
+# - Considerar VPA (Vertical Pod Autoscaler) en lugar de HPA
+#
+# Para escalar SeaweedFS correctamente:
+# 1. Master: kubectl scale statefulset seaweedfs-master --replicas=5 (manual)
+# 2. Volume: Monitorear uso de disco y escalar manualmente
+# 3. Filer: Puede usar HPA con cuidado (menos crítico) 

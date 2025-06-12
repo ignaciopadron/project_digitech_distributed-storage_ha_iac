@@ -1,0 +1,31 @@
+---
+# Rol para gestión de usuarios y autenticación SSH
+- name: Crear el usuario administrador
+  user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    groups: 
+      - sudo
+      - adm
+    append: yes
+    state: present
+    createhome: yes
+
+- name: Configurar sudoers sin contraseña para el usuario administrador
+  lineinfile:
+    path: /etc/sudoers.d/{{ admin_user }}
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Copiar clave pública SSH para el usuario administrador
+  authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', ssh_public_key_path) }}"
+    state: present
+
+- name: Deshabilitar autenticación por contraseña para root
+  user:
+    name: root
+    password_lock: yes 

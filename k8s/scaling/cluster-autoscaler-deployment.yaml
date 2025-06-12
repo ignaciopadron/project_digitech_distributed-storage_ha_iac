@@ -1,0 +1,75 @@
+# cluster-autoscaler-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+  labels:
+    app: cluster-autoscaler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cluster-autoscaler
+  template:
+    metadata:
+      labels:
+        app: cluster-autoscaler
+    spec:
+      priorityClassName: system-cluster-critical
+      serviceAccountName: cluster-autoscaler
+      # Forzar ejecución SOLO en nodos master/control-plane
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      # Tolerancias para ejecutarse en nodos control-plane
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        operator: Exists 
+        effect: NoSchedule
+      containers:
+      - image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.30.3
+        name: cluster-autoscaler
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 100m
+            memory: 300Mi
+        command:
+        - ./cluster-autoscaler
+        - --v=4
+        - --cloud-provider=hetzner
+        - --skip-nodes-with-local-storage=false
+        - --expander=least-waste
+        - --balance-similar-node-groups=false
+        - --scale-down-enabled=true
+        - --scale-down-delay-after-add=10m
+        - --scale-down-unneeded-time=10m
+        - --scale-down-utilization-threshold=0.3
+        - --max-nodes-total=4
+        - --nodes=0:1:cx22:fsn1:k3s-workers
+        env:
+        - name: HCLOUD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: hcloud 
+              key: token
+        - name: HCLOUD_CLUSTER_CONFIG
+          valueFrom:
+            secretKeyRef:
+              name: hcloud-cluster-config
+              key: config
+        volumeMounts:
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs/ca-certificates.crt
+          readOnly: true
+        imagePullPolicy: IfNotPresent
+      volumes:
+      - name: ssl-certs
+        hostPath:
+          path: "/etc/ssl/certs/ca-certificates.crt"

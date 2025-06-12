@@ -1,0 +1,19 @@
+write-kubeconfig-mode: "0644"
+tls-san:
+  - "{{ ansible_default_ipv4.address }}"
+  - "{{ tailscale_ip }}"
+node-ip: "{{ tailscale_ip }}"
+node-external-ip: "{{ ansible_default_ipv4.address }}"
+advertise-address: "{{ tailscale_ip }}"
+flannel-iface: "{{ k3s_flannel_iface }}"
+cluster-init: true
+cluster-cidr: "{{ k3s_cluster_cidr }}"
+service-cidr: "{{ k3s_service_cidr }}"
+disable:
+{% for component in k3s_disable_components %}
+  - {{ component }}
+{% endfor %}
+kubelet-arg:
+  - "kube-reserved={{ kubelet_config.kube_reserved }}"
+  - "system-reserved={{ kubelet_config.system_reserved }}"
+  - "eviction-hard={{ kubelet_config.eviction_hard }}" 

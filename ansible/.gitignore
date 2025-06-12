@@ -1,0 +1,104 @@
+# Ansible .gitignore - Protección de archivos sensibles
+
+# ==========================================
+# ARCHIVOS DE CONTRASEÑAS Y SECRETOS
+# ==========================================
+# Archivos de contraseña del vault (NUNCA commitear)
+.vault_pass
+.vault_password
+vault_pass.txt
+vault_password.txt
+
+# Archivos de secretos sin cifrar (NUNCA commitear)
+**/secrets.yml
+**/vault.yml.decrypted
+**/passwords.yml
+**/credentials.yml
+
+# ==========================================
+# ARCHIVOS TEMPORALES DE ANSIBLE
+# ==========================================
+# Archivos de retry de Ansible
+*.retry
+
+# Archivos de log de Ansible
+ansible.log
+*.log
+
+# Archivos temporales
+.tmp/
+tmp/
+temp/
+
+# ==========================================
+# ARCHIVOS DE CONFIGURACIÓN LOCAL
+# ==========================================
+# Configuraciones locales específicas del usuario
+local_vars.yml
+local_config.yml
+.local/
+
+# Archivos de inventario con IPs reales (si contienen info sensible)
+# inventory_production.ini
+# hosts_production.yml
+
+# ==========================================
+# ARCHIVOS DE BACKUP Y CACHE
+# ==========================================
+# Backups automáticos
+*.bak
+*.backup
+*~
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# ==========================================
+# ARCHIVOS DE DESARROLLO
+# ==========================================
+# Archivos de test con datos reales
+test_with_real_data.yml
+debug_*.yml
+
+# Archivos de desarrollo personal
+dev_*.yml
+personal_*.yml
+
+# ==========================================
+# CLAVES SSH Y CERTIFICADOS
+# ==========================================
+# Claves SSH privadas (si se almacenan aquí por error)
+*.pem
+*.key
+id_rsa
+id_ed25519
+*.crt
+*.csr
+
+# ==========================================
+# ARCHIVOS DE EDITOR
+# ==========================================
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*#
+.#*
+
+# VS Code
+.vscode/settings.json
+
+# ==========================================
+# ARCHIVOS ESPECÍFICOS DEL PROYECTO
+# ==========================================
+# Archivos generados dinámicamente
+generated_inventory.ini
+dynamic_vars.yml
+
+# Archivos de estado de despliegue
+deployment_state.yml
+last_run.yml 

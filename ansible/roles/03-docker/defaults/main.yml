@@ -1,0 +1,20 @@
+---
+# Variables por defecto para el rol 03-docker
+# Configuración de Docker
+
+# Configuración del daemon de Docker
+docker_daemon_config:
+  exec-opts:
+    - "native.cgroupdriver=systemd"
+  log-driver: "json-file"
+  log-opts:
+    max-size: "100m"
+  storage-driver: "overlay2"
+
+# Paquetes de Docker a instalar
+docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin 

@@ -1,0 +1,13 @@
+---
+# Handlers para el rol de seguridad
+- name: Restart SSH service
+  systemd:
+    name: ssh
+    state: restarted
+    daemon_reload: yes
+
+- name: Restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted
+    daemon_reload: yes 

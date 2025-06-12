@@ -1,0 +1,44 @@
+---
+# Variables por defecto para el rol 05-k3s-cluster
+# Configuración de K3s
+
+# Versión de K3s
+k3s_version: "v1.32.5+k3s1"
+
+# Configuración del cluster
+k3s_config_dir: "/etc/rancher/k3s"
+k3s_data_dir: "/var/lib/rancher/k3s"
+
+# Configuración de kubelet
+kubelet_config:
+  kube_reserved: "cpu=100m,memory=128Mi"
+  system_reserved: "cpu=100m,memory=128Mi"
+  eviction_hard: "memory.available<100Mi,nodefs.available<10%"
+
+# Componentes a deshabilitar
+k3s_disable_components:
+  - traefik
+  - servicelb
+
+# Configuración de red
+k3s_flannel_iface: "tailscale0"  # Usar interfaz de Tailscale
+k3s_cluster_cidr: "10.42.0.0/16"
+k3s_service_cidr: "10.43.0.0/16"
+
+# Configuración del servidor
+k3s_server_config:
+  write-kubeconfig-mode: "0644"
+  cluster-init: true
+  disable: "{{ k3s_disable_components }}"
+  flannel-iface: "{{ k3s_flannel_iface }}"
+  cluster-cidr: "{{ k3s_cluster_cidr }}"
+  service-cidr: "{{ k3s_service_cidr }}"
+
+# Configuración específica de Hetzner Cloud (opcional)
+# Estas variables se pueden definir en el inventario por host
+# hcloud_server_id: ""
+# hcloud_location: "fsn1"
+# hcloud_instance_type: "cx22"
+
+# IP del servidor K3s maestro (debe coincidir con cloud-init)
+k3s_master_ip: "100.100.75.127" 

@@ -1,0 +1,19 @@
+node-ip: "{{ tailscale_ip }}"
+node-external-ip: "{{ ansible_default_ipv4.address }}"
+flannel-iface: "{{ k3s_flannel_iface }}"
+{% if hcloud_server_id is defined %}
+provider-id: "hcloud://{{ hcloud_server_id }}"
+{% endif %}
+node-label:
+  - "cluster-autoscaler.kubernetes.io/node-template=k3s-workers"
+  - "node-role.kubernetes.io/worker=worker"
+{% if hcloud_location is defined %}
+  - "hetzner.cloud/location={{ hcloud_location }}"
+{% endif %}
+{% if hcloud_instance_type is defined %}
+  - "node.kubernetes.io/instance-type={{ hcloud_instance_type }}"
+{% endif %}
+kubelet-arg:
+  - "kube-reserved={{ kubelet_config.kube_reserved }}"
+  - "system-reserved={{ kubelet_config.system_reserved }}"
+  - "eviction-hard={{ kubelet_config.eviction_hard }}" 

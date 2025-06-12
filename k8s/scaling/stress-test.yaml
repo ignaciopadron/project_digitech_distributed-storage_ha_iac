@@ -1,0 +1,42 @@
+# Deployment de alta carga para pruebas de escalado
+# Útil para probar que el Cluster Autoscaler funciona
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test
+  namespace: default
+  labels:
+    app: stress-test
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: stress-test
+  template:
+    metadata:
+      labels:
+        app: stress-test
+    spec:
+      containers:
+      - name: stress
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          apk add --no-cache stress-ng && \
+          stress-ng --cpu 4 --timeout 300s
+        resources:
+          requests:
+            cpu: 900m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      # Evitar nodos master
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/control-plane
+                operator: DoesNotExist

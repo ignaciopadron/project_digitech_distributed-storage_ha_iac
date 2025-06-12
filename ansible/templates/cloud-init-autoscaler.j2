@@ -1,0 +1,55 @@
+#cloud-config
+# Template de cloud-init para nodos worker K3s autoscalados
+# Basado en el script manual que funciona correctamente
+
+packages:
+  - curl
+  - tailscale
+
+runcmd:
+  # El bloque entero se ejecuta como un único script. Si algo falla, se detiene.
+  - |
+    #!/bin/bash
+    set -e # Salir inmediatamente si un comando falla
+
+    # --- 1. Instalar y configurar Tailscale ---
+    echo "Instalando y configurando Tailscale..."
+    # Descargar e instalar Tailscale usando el script oficial
+    curl -fsSL https://tailscale.com/install.sh | sh
+
+    # Unir el nodo a la red Tailscale usando una Auth Key (reutilizable y/o efímera)
+    # El hostname ayuda a identificar nodos autoescalados en la consola de Tailscale.
+    tailscale up \
+      --authkey={{ tailscale_auth_key }} \
+      --hostname=hetzner-autoscaled-$(hostname)
+
+    # Esperar un par de segundos para que la IP se asigne y obtenerla
+    sleep 5
+    TAILSCALE_IP=$(tailscale ip -4)
+    if [ -z "$TAILSCALE_IP" ]; then
+        echo "Error: No se pudo obtener la IP de Tailscale."
+        exit 1
+    fi
+    echo "Nodo unido a Tailscale con IP: $TAILSCALE_IP"
+
+    # Obtener Server ID de Hetzner Cloud
+    SRV_ID=$(curl -s http://169.254.169.254/metadata/instance/id)
+    
+    # --- 2. Instalar el agente K3s y unirlo al clúster ---
+    echo "Instalando el agente K3s..."
+    # Usamos la IP de Tailscale para la comunicación interna del clúster
+    curl -sfL https://get.k3s.io | \
+      K3S_URL="https://{{ k3s_master_ip }}:6443" \
+      K3S_TOKEN="{{ k3s_token }}" \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      INSTALL_K3S_EXEC="agent \
+        --node-ip=${TAILSCALE_IP} \
+        --flannel-iface=tailscale0 \
+        --provider-id=hcloud://${SRV_ID} \
+        --node-label cluster-autoscaler.kubernetes.io/node-template=k3s-workers \
+        --node-label node-role.kubernetes.io/worker=worker \
+        --node-label hetzner.cloud/location={{ hcloud_worker_location | default('fsn1') }} \
+        --node-label node.kubernetes.io/instance-type={{ hcloud_worker_server_type | default('cx22') }}" \
+      sh -
+
+    echo "El nodo se ha unido al clúster K3s correctamente."

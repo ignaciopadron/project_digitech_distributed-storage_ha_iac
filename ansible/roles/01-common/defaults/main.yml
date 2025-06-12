@@ -1,0 +1,47 @@
+---
+# Variables por defecto para el rol 01-common
+# Configuración básica del sistema, usuarios y paquetes
+
+# Configuración del usuario administrador
+admin_user: ciberpadron
+ssh_public_key_path: files/ciberpadron_authorized_keys
+sudo_nopasswd: true
+
+# Configuración de timezone
+system_timezone: Europe/Madrid
+
+# Paquetes básicos del sistema organizados por categoría
+basic_packages:
+  - curl
+  - wget
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - python3-pip  # Necesario para algunos módulos de Ansible
+
+security_packages:
+  - ufw
+  - fail2ban
+
+network_packages:
+  - tailscale  # Cambiado de wireguard a tailscale
+  - net-tools
+
+admin_tools:
+  - htop
+  - vim
+  - git
+
+# Parámetros del kernel para Kubernetes
+kernel_parameters:
+  - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+  - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+  - { key: 'net.ipv4.ip_forward', value: '1' }
+  - { key: 'vm.swappiness', value: '1' }
+
+# Módulos del kernel requeridos
+kernel_modules:
+  - br_netfilter
+  - overlay 

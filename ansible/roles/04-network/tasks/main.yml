@@ -1,0 +1,63 @@
+---
+# Rol 04-network: Configuración de Tailscale
+
+- name: Verificar si Tailscale ya está instalado
+  command: which tailscale
+  register: tailscale_installed
+  failed_when: false
+  changed_when: false
+
+- name: Instalar Tailscale
+  block:
+    - name: Descargar script de instalación de Tailscale
+      get_url:
+        url: https://tailscale.com/install.sh
+        dest: /tmp/tailscale-install.sh
+        mode: '0755'
+
+    - name: Ejecutar script de instalación de Tailscale
+      command: /tmp/tailscale-install.sh
+      args:
+        creates: /usr/bin/tailscale
+
+    - name: Limpiar script de instalación
+      file:
+        path: /tmp/tailscale-install.sh
+        state: absent
+  when: tailscale_installed.rc != 0
+
+- name: Verificar estado de Tailscale
+  command: tailscale status --json
+  register: tailscale_status
+  failed_when: false
+  changed_when: false
+
+- name: Configurar Tailscale si no está conectado
+  block:
+    - name: Conectar a Tailscale
+      command: >
+        tailscale up
+        --authkey={{ tailscale_auth_key }}
+        --hostname={{ tailscale_hostname }}
+        {% if tailscale_advertise_routes %}--advertise-routes={{ tailscale_advertise_routes | join(',') }}{% endif %}
+        {% if tailscale_accept_routes %}--accept-routes{% endif %}
+        {% if tailscale_accept_dns %}--accept-dns{% endif %}
+        {% if tailscale_shields_up %}--shields-up{% endif %}
+        {{ tailscale_extra_args }}
+      no_log: true  # No mostrar la auth key en los logs
+
+    - name: Verificar conexión a Tailscale
+      command: tailscale status
+      register: tailscale_final_status
+      changed_when: false
+
+    - name: Mostrar estado de Tailscale
+      debug:
+        msg: "{{ tailscale_final_status.stdout_lines }}"
+  when: tailscale_status.rc != 0 or 'Stopped' in tailscale_status.stdout
+
+- name: Habilitar y iniciar servicio Tailscale
+  systemd:
+    name: tailscaled
+    enabled: yes
+    state: started 

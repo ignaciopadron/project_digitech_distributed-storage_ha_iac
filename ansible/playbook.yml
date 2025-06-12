@@ -1,0 +1,101 @@
+---
+# Playbook principal para configuración de nodos K3s
+# Único punto de entrada para la configuración completa del cluster
+
+- name: Configurar cluster K3s con Tailscale
+  hosts: k3s_nodes
+  become: yes
+  gather_facts: yes
+  serial: "{{ ansible_serial | default(1) }}"  # Configurar nodos de uno en uno por defecto
+
+  vars_files:
+    - group_vars/all/vars.yml
+    # vault.yml se carga automáticamente si existe
+
+  pre_tasks:
+    - name: Esperar a que el sistema esté listo después de cloud-init
+      wait_for_connection:
+        timeout: 300
+        delay: 30
+
+    - name: Verificar que cloud-init ha terminado
+      command: cloud-init status --wait
+      changed_when: false
+      failed_when: false
+
+  roles:
+    - 01-common      # Paquetes, usuarios, configuración básica del sistema
+    - 02-security    # SSH hardening, fail2ban, firewall UFW
+    - 03-docker      # Instalación y configuración de Docker
+    - 04-network     # Configuración de Tailscale
+    - 05-k3s-cluster # Despliegue del cluster K3s
+
+  post_tasks:
+    - name: Verificar servicios críticos
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - ssh
+        - fail2ban
+        - docker
+        - tailscaled
+        - k3s
+
+    - name: Mostrar resumen de configuración
+      debug:
+        msg: |
+          ==========================================
+          🎉 NODO CONFIGURADO EXITOSAMENTE
+          ==========================================
+          - Usuario administrador: {{ admin_user }}
+          - Puerto SSH: {{ ssh_port | default('22') }}
+          - Firewall UFW: habilitado
+          - Fail2ban: activo
+          - Docker: instalado y funcionando
+          - Tailscale: conectado
+          - K3s: desplegado
+          - Sistema optimizado para Kubernetes
+          ==========================================
+
+# ==========================================
+# PLAY 2: VERIFICACIÓN DEL CLUSTER
+# ==========================================
+- name: Verificar el estado del cluster K3s
+  hosts: k3s_master_initial
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Esperar a que todos los nodos estén listos
+      command: k3s kubectl get nodes --no-headers
+      register: nodes_status
+      until: nodes_status.stdout_lines | length == groups['k3s_nodes'] | length
+      retries: 30
+      delay: 10
+
+    - name: Mostrar estado de los nodos
+      command: k3s kubectl get nodes -o wide
+      register: cluster_nodes
+
+    - name: Mostrar información del cluster
+      debug:
+        msg: |
+          ==========================================
+          🎉 CLUSTER K3S CONFIGURADO EXITOSAMENTE
+          ==========================================
+          {{ cluster_nodes.stdout }}
+          
+          📋 Información del cluster:
+          - Nodos totales: {{ groups['k3s_nodes'] | length }}
+          - Nodo maestro inicial: {{ groups['k3s_master_initial'][0] }}
+          - Nodos maestros adicionales: {{ groups['k3s_masters_additional'] | default([]) | length }}
+          - Nodos worker: {{ groups['k3s_workers'] | default([]) | length }}
+          - Kubeconfig guardado en: {{ playbook_dir }}/../kubeconfig
+          
+          🔧 Para usar kubectl localmente:
+          export KUBECONFIG={{ playbook_dir }}/../kubeconfig
+          kubectl get nodes
+          
+          🚀 Siguiente paso: Ejecutar 'make secrets' y luego 'make deploy-apps'

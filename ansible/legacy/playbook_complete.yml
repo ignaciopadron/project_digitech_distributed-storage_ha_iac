@@ -1,0 +1,480 @@
+---
+# playbook_complete.yml - Playbook completo para configurar el cluster K3s
+
+- name: Configure K3s Hetzner Cluster - Complete Setup
+  hosts: k3s_nodes
+  become: yes
+  gather_facts: yes
+  serial: "{{ ansible_serial | default(1) }}"  # Configurar nodos de uno en uno por defecto
+
+  vars_files:
+    - group_vars/all/vars.yml
+    - group_vars/all/generated_vars.yml
+
+  pre_tasks:
+    - name: Esperar a que el sistema esté listo después de cloud-init
+      wait_for_connection:
+        timeout: 300
+        delay: 30
+
+    - name: Verificar que cloud-init ha terminado
+      command: cloud-init status --wait
+      changed_when: false
+      failed_when: false
+
+  tasks:
+    # ==========================================
+    # FASE 1: PREPARACIÓN DEL SISTEMA
+    # ==========================================
+    - name: Instalar paquetes Python necesarios para los módulos de Ansible
+      ansible.builtin.apt:
+        name:
+          - python3-pip
+          - python3-docker
+        state: present
+        update_cache: yes
+
+    - name: Instalar PyUFW para el módulo UFW de Ansible
+      ansible.builtin.pip:
+        name:
+          - PyUFW
+        state: present
+
+    - name: Actualizar cache de apt e instalar paquetes del sistema
+      ansible.builtin.apt:
+        name: "{{ system_packages }}"
+        state: present
+        update_cache: yes
+
+    # ==========================================
+    # FASE 2: CONFIGURACIÓN DE USUARIOS Y SSH
+    # ==========================================
+    - name: Asegurar que el usuario ciberpadron existe
+      ansible.builtin.user:
+        name: ciberpadron
+        shell: /bin/bash
+        groups: sudo,docker
+        append: yes
+        create_home: yes
+        state: present
+
+    - name: Configurar clave SSH autorizada
+      ansible.posix.authorized_key:
+        user: ciberpadron
+        state: present
+        key: "{{ lookup('file', 'files/ciberpadron_authorized_keys') }}"
+      when: lookup('file', 'files/ciberpadron_authorized_keys', errors='ignore')
+
+    - name: Configurar SSH con hardening
+      ansible.builtin.template:
+        src: templates/sshd_config.j2
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart SSH
+
+    # ==========================================
+    # FASE 3: CONFIGURACIÓN DE SEGURIDAD
+    # ==========================================
+    - name: Configurar Fail2ban
+      ansible.builtin.copy:
+        content: "{{ fail2ban_jail_local_content }}"
+        dest: /etc/fail2ban/jail.local
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Fail2ban
+
+    - name: Habilitar y iniciar Fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        enabled: yes
+        state: started
+
+    # ==========================================
+    # FASE 4: CONFIGURACIÓN DE FIREWALL UFW
+    # ==========================================
+    - name: Configurar UFW - Denegar todo entrante
+      community.general.ufw:
+        default: deny
+        direction: incoming
+
+    - name: Configurar UFW - Permitir todo saliente
+      community.general.ufw:
+        default: allow
+        direction: outgoing
+
+    - name: UFW - Permitir puertos TCP necesarios
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.split('/')[0] }}"
+        proto: "{{ item.split('/')[1] | default('tcp') }}"
+      loop: "{{ ufw_allowed_ports_tcp }}"
+
+    - name: UFW - Permitir puertos UDP necesarios
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.split('/')[0] }}"
+        proto: "{{ item.split('/')[1] | default('udp') }}"
+      loop: "{{ ufw_allowed_ports_udp }}"
+
+    - name: UFW - Habilitar firewall
+      community.general.ufw:
+        state: enabled
+
+    # ==========================================
+    # FASE 5: INSTALACIÓN DE DOCKER
+    # ==========================================
+    - name: Añadir clave GPG de Docker
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Añadir repositorio de Docker
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Instalar Docker
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
+
+    - name: Configurar Docker para usar systemd como cgroup driver
+      ansible.builtin.copy:
+        content: |
+          {
+            "exec-opts": ["native.cgroupdriver=systemd"],
+            "log-driver": "json-file",
+            "log-opts": {
+              "max-size": "100m"
+            },
+            "storage-driver": "overlay2"
+          }
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart Docker
+
+    - name: Habilitar y iniciar Docker
+      ansible.builtin.service:
+        name: docker
+        enabled: yes
+        state: started
+
+    - name: Añadir usuario al grupo docker
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    # ==========================================
+    # FASE 6: CONFIGURACIÓN DE WIREGUARD
+    # ==========================================
+    - name: Crear directorio de configuración WireGuard
+      ansible.builtin.file:
+        path: "{{ wg_config_path }}"
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+
+    - name: Verificar si existe clave privada WireGuard
+      ansible.builtin.stat:
+        path: "{{ wg_private_key_file }}"
+      register: wg_private_key_stat
+
+    - name: Generar clave privada WireGuard
+      ansible.builtin.command: "wg genkey"
+      register: wg_private_key_gen
+      when: not wg_private_key_stat.stat.exists
+      changed_when: true
+
+    - name: Guardar clave privada WireGuard
+      ansible.builtin.copy:
+        content: "{{ wg_private_key_gen.stdout }}"
+        dest: "{{ wg_private_key_file }}"
+        owner: root
+        group: root
+        mode: '0600'
+      when: not wg_private_key_stat.stat.exists
+
+    - name: Leer clave privada WireGuard
+      ansible.builtin.slurp:
+        src: "{{ wg_private_key_file }}"
+      register: slurp_wg_private_key
+      no_log: true
+
+    - name: Establecer clave privada como fact
+      ansible.builtin.set_fact:
+        wg_private_key_content: "{{ slurp_wg_private_key.content | b64decode | trim }}"
+      no_log: true
+
+    - name: Generar clave pública WireGuard
+      ansible.builtin.command: "wg pubkey"
+      args:
+        stdin: "{{ wg_private_key_content }}"
+      register: wg_public_key_gen
+      changed_when: false
+      no_log: true
+
+    - name: Establecer clave pública como fact
+      ansible.builtin.set_fact:
+        wg_public_key_content: "{{ wg_public_key_gen.stdout }}"
+
+    - name: Crear configuración WireGuard
+      ansible.builtin.template:
+        src: templates/wg0.conf.j2
+        dest: "{{ wg_config_path }}/{{ wg_interface_name }}.conf"
+        owner: root
+        group: root
+        mode: '0600'
+      notify: Restart WireGuard
+
+    - name: Habilitar e iniciar WireGuard
+      ansible.builtin.systemd:
+        name: "wg-quick@{{ wg_interface_name }}"
+        enabled: yes
+        state: started
+
+    # ==========================================
+    # FASE 7: PREPARACIÓN PARA K3S
+    # ==========================================
+    - name: Configurar módulos del kernel para Kubernetes
+      ansible.builtin.copy:
+        content: |
+          br_netfilter
+          overlay
+        dest: /etc/modules-load.d/k3s.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Cargar módulos del kernel
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - br_netfilter
+        - overlay
+
+    - name: Configurar parámetros sysctl para Kubernetes
+      ansible.builtin.copy:
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward = 1
+        dest: /etc/sysctl.d/99-kubernetes.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reload sysctl
+
+    # ==========================================
+    # FASE 8: INSTALACIÓN Y CONFIGURACIÓN DE K3S
+    # ==========================================
+    - name: Configurar K3s en el nodo maestro
+      block:
+        - name: Crear directorio de configuración K3s
+          ansible.builtin.file:
+            path: /etc/rancher/k3s
+            state: directory
+            mode: '0755'
+            owner: root
+            group: root
+
+        - name: Crear archivo de configuración K3s para el servidor maestro
+          ansible.builtin.copy:
+            content: |
+              write-kubeconfig-mode: "0644"
+              tls-san:
+                - "{{ ansible_default_ipv4.address }}"
+                - "{{ k3s_master_ip }}"
+              node-ip: "{{ wireguard_ip }}"
+              node-external-ip: "{{ ansible_default_ipv4.address }}"
+              advertise-address: "{{ wireguard_ip }}"
+              flannel-iface: "wg0"
+              cluster-init: true
+              disable:
+                - traefik
+                - servicelb
+              kubelet-arg:
+                - "kube-reserved={{ kubelet_config.kube_reserved }}"
+                - "system-reserved={{ kubelet_config.system_reserved }}"
+                - "eviction-hard={{ kubelet_config.eviction_hard }}"
+            dest: /etc/rancher/k3s/config.yaml
+            owner: root
+            group: root
+            mode: '0644'
+
+        - name: Instalar K3s en el nodo maestro
+          ansible.builtin.shell: |
+            curl -sfL https://get.k3s.io | \
+            INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+          environment:
+            INSTALL_K3S_EXEC: "server"
+          creates: /usr/local/bin/k3s
+
+        - name: Esperar a que K3s esté listo
+          ansible.builtin.wait_for:
+            port: 6443
+            host: "{{ wireguard_ip }}"
+            timeout: 300
+
+        - name: Obtener token de K3s
+          ansible.builtin.slurp:
+            src: /var/lib/rancher/k3s/server/node-token
+          register: k3s_token_encoded
+
+        - name: Establecer token de K3s como fact
+          ansible.builtin.set_fact:
+            k3s_token: "{{ k3s_token_encoded.content | b64decode | trim }}"
+
+        - name: Obtener kubeconfig
+          ansible.builtin.slurp:
+            src: /etc/rancher/k3s/k3s.yaml
+          register: k3s_kubeconfig_encoded
+
+        - name: Guardar kubeconfig localmente
+          ansible.builtin.copy:
+            content: "{{ k3s_kubeconfig_encoded.content | b64decode | regex_replace('127.0.0.1', k3s_master_ip) }}"
+            dest: "{{ playbook_dir }}/../kubeconfig"
+            mode: '0600'
+          delegate_to: localhost
+          become: no
+
+      when: inventory_hostname in groups['k3s_master']
+
+    - name: Configurar K3s en los nodos worker
+      block:
+        - name: Crear directorio de configuración K3s
+          ansible.builtin.file:
+            path: /etc/rancher/k3s
+            state: directory
+            mode: '0755'
+            owner: root
+            group: root
+
+        - name: Crear archivo de configuración K3s para workers
+          ansible.builtin.copy:
+            content: |
+              node-ip: "{{ wireguard_ip }}"
+              node-external-ip: "{{ ansible_default_ipv4.address }}"
+              flannel-iface: "wg0"
+              kubelet-arg:
+                - "kube-reserved={{ kubelet_config.kube_reserved }}"
+                - "system-reserved={{ kubelet_config.system_reserved }}"
+                - "eviction-hard={{ kubelet_config.eviction_hard }}"
+            dest: /etc/rancher/k3s/config.yaml
+            owner: root
+            group: root
+            mode: '0644'
+
+        - name: Instalar K3s en nodos worker
+          ansible.builtin.shell: |
+            curl -sfL https://get.k3s.io | \
+            K3S_URL="https://{{ hostvars[groups['k3s_master'][0]]['wireguard_ip'] }}:6443" \
+            K3S_TOKEN="{{ hostvars[groups['k3s_master'][0]]['k3s_token'] }}" \
+            INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+          environment:
+            INSTALL_K3S_EXEC: "server"
+          creates: /usr/local/bin/k3s
+
+      when: inventory_hostname in groups['k3s_workers']
+
+    # ==========================================
+    # FASE 9: CONFIGURACIÓN POST-INSTALACIÓN
+    # ==========================================
+    - name: Habilitar y iniciar K3s
+      ansible.builtin.service:
+        name: k3s
+        enabled: yes
+        state: started
+
+    - name: Crear alias para kubectl
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: "alias kubectl='k3s kubectl'"
+        create: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Configurar autocompletado de kubectl
+      ansible.builtin.lineinfile:
+        path: "/home/{{ ansible_user }}/.bashrc"
+        line: "source <(k3s kubectl completion bash)"
+        create: yes
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.service:
+        name: ssh
+        state: restarted
+
+    - name: Restart Fail2ban
+      ansible.builtin.service:
+        name: fail2ban
+        state: restarted
+
+    - name: Restart Docker
+      ansible.builtin.service:
+        name: docker
+        state: restarted
+
+    - name: Restart WireGuard
+      ansible.builtin.service:
+        name: "wg-quick@{{ wg_interface_name }}"
+        state: restarted
+
+    - name: Reload sysctl
+      ansible.builtin.command: sysctl --system
+
+# ==========================================
+# PLAY 2: VERIFICACIÓN DEL CLUSTER
+# ==========================================
+- name: Verificar el estado del cluster K3s
+  hosts: k3s_master
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Esperar a que todos los nodos estén listos
+      ansible.builtin.command: k3s kubectl get nodes --no-headers
+      register: nodes_status
+      until: nodes_status.stdout_lines | length == groups['k3s_nodes'] | length
+      retries: 30
+      delay: 10
+
+    - name: Mostrar estado de los nodos
+      ansible.builtin.command: k3s kubectl get nodes -o wide
+      register: cluster_nodes
+
+    - name: Mostrar información del cluster
+      ansible.builtin.debug:
+        msg: |
+          ==========================================
+          🎉 CLUSTER K3S CONFIGURADO EXITOSAMENTE
+          ==========================================
+          {{ cluster_nodes.stdout }}
+          
+          📋 Información del cluster:
+          - Nodos totales: {{ groups['k3s_nodes'] | length }}
+          - Nodo maestro: {{ groups['k3s_master'][0] }}
+          - Nodos worker: {{ groups['k3s_workers'] | length }}
+          - Kubeconfig guardado en: {{ playbook_dir }}/../kubeconfig
+          
+          🔧 Para usar kubectl localmente:
+          export KUBECONFIG={{ playbook_dir }}/../kubeconfig
+          kubectl get nodes
+          
+          🚀 Siguiente paso: Ejecutar 'make install-applications' 

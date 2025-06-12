@@ -1,0 +1,162 @@
+---
+# Rol 05-k3s-cluster: Instalación y configuración de K3s
+
+- name: Crear directorio de configuración K3s
+  file:
+    path: "{{ k3s_config_dir }}"
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Obtener IP de Tailscale
+  command: tailscale ip -4
+  register: tailscale_ip_result
+  changed_when: false
+
+- name: Establecer IP de Tailscale como fact
+  set_fact:
+    tailscale_ip: "{{ tailscale_ip_result.stdout.strip() }}"
+
+- name: Obtener Server ID de Hetzner Cloud (si está disponible)
+  uri:
+    url: http://169.254.169.254/metadata/instance/id
+    method: GET
+    timeout: 5
+  register: hcloud_metadata
+  failed_when: false
+  changed_when: false
+
+- name: Establecer Server ID como fact si está disponible
+  set_fact:
+    hcloud_server_id: "{{ hcloud_metadata.content }}"
+  when: hcloud_metadata.status == 200
+
+# ==========================================
+# CONFIGURACIÓN DEL NODO MAESTRO INICIAL
+# ==========================================
+- name: Configurar K3s en el nodo maestro inicial
+  block:
+    - name: Crear archivo de configuración K3s para el servidor maestro
+      template:
+        src: k3s-server-config.yaml.j2
+        dest: "{{ k3s_config_dir }}/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Instalar K3s en el nodo maestro inicial
+      shell: |
+        curl -sfL https://get.k3s.io | \
+        INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+      environment:
+        INSTALL_K3S_EXEC: "server"
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Esperar a que K3s esté listo
+      wait_for:
+        port: 6443
+        host: "{{ tailscale_ip }}"
+        timeout: 300
+
+    - name: Obtener token de K3s
+      slurp:
+        src: "{{ k3s_data_dir }}/server/node-token"
+      register: k3s_token_encoded
+
+    - name: Establecer token de K3s como fact
+      set_fact:
+        k3s_token: "{{ k3s_token_encoded.content | b64decode | trim }}"
+
+    - name: Obtener kubeconfig
+      slurp:
+        src: "{{ k3s_config_dir }}/k3s.yaml"
+      register: k3s_kubeconfig_encoded
+
+    - name: Guardar kubeconfig localmente
+      copy:
+        content: "{{ k3s_kubeconfig_encoded.content | b64decode | regex_replace('127.0.0.1', tailscale_ip) }}"
+        dest: "{{ playbook_dir }}/../kubeconfig"
+        mode: '0600'
+      delegate_to: localhost
+      become: no
+
+  when: inventory_hostname in groups['k3s_master_initial']
+
+# ==========================================
+# CONFIGURACIÓN DE NODOS MAESTROS ADICIONALES
+# ==========================================
+- name: Configurar K3s en nodos maestros adicionales
+  block:
+    - name: Crear archivo de configuración K3s para maestros adicionales
+      template:
+        src: k3s-server-additional-config.yaml.j2
+        dest: "{{ k3s_config_dir }}/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Instalar K3s en nodos maestros adicionales
+      shell: |
+        curl -sfL https://get.k3s.io | \
+        K3S_URL="https://{{ k3s_master_ip }}:6443" \
+        K3S_TOKEN="{{ hostvars[groups['k3s_master_initial'][0]]['k3s_token'] }}" \
+        INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+      environment:
+        INSTALL_K3S_EXEC: "server"
+      args:
+        creates: /usr/local/bin/k3s
+
+  when: inventory_hostname in groups['k3s_masters_additional'] | default([])
+
+# ==========================================
+# CONFIGURACIÓN DE NODOS WORKER
+# ==========================================
+- name: Configurar K3s en nodos worker
+  block:
+    - name: Crear archivo de configuración K3s para workers
+      template:
+        src: k3s-agent-config.yaml.j2
+        dest: "{{ k3s_config_dir }}/config.yaml"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Instalar K3s en nodos worker
+      shell: |
+        curl -sfL https://get.k3s.io | \
+        K3S_URL="https://{{ k3s_master_ip }}:6443" \
+        K3S_TOKEN="{{ hostvars[groups['k3s_master_initial'][0]]['k3s_token'] }}" \
+        INSTALL_K3S_VERSION="{{ k3s_version }}" sh -
+      environment:
+        INSTALL_K3S_EXEC: "agent"
+      args:
+        creates: /usr/local/bin/k3s
+
+  when: inventory_hostname in groups['k3s_workers'] | default([])
+
+# ==========================================
+# CONFIGURACIÓN POST-INSTALACIÓN
+# ==========================================
+- name: Habilitar y iniciar K3s
+  systemd:
+    name: k3s
+    enabled: yes
+    state: started
+
+- name: Crear alias para kubectl
+  lineinfile:
+    path: "/home/{{ admin_user }}/.bashrc"
+    line: "alias kubectl='k3s kubectl'"
+    create: yes
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+
+- name: Configurar autocompletado de kubectl
+  lineinfile:
+    path: "/home/{{ admin_user }}/.bashrc"
+    line: "source <(k3s kubectl completion bash)"
+    create: yes
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}" 

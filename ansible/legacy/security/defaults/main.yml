@@ -1,0 +1,33 @@
+---
+# Variables por defecto para el rol de seguridad
+# Estas variables pueden ser sobrescritas en group_vars o host_vars
+
+# Configuración SSH (ssh_port se define en group_vars/all/vars.yml)
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+ssh_service_name: ssh
+
+# Configuración fail2ban
+fail2ban_bantime: 1h
+fail2ban_findtime: 10m
+fail2ban_maxretry: 5
+fail2ban_ssh_maxretry: 3
+
+# Puertos permitidos en UFW
+ufw_allowed_ports_tcp:
+  - "{{ ssh_port }}"  # SSH (variable global)
+  - "80"              # HTTP
+  - "443"             # HTTPS
+  - "6443"            # Kubernetes API Server
+  - "10250"           # Kubelet server
+
+ufw_allowed_ports_udp:
+  - "8472"            # Flannel VXLAN
+
+# Límites del sistema
+system_limits:
+  - "* soft nofile 65536"
+  - "* hard nofile 65536"
+  - "* soft nproc 65536"
+  - "* hard nproc 65536" 

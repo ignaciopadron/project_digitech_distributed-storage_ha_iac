@@ -1,0 +1,18 @@
+[Interface]
+Address = {{ wireguard_ip_cidr }}
+PrivateKey = {{ wg_private_key_content }}  # Esta variable se creará con el contenido de la clave
+ListenPort = {{ wg_listen_port }}
+PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o {{ public_interface_name }} -j MASQUERADE
+PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o {{ public_interface_name }} -j MASQUERADE
+SaveConfig = true
+
+{% for peer_host in groups['k3s_nodes'] %}
+{% if peer_host != inventory_hostname %}
+# Peer {{ hostvars[peer_host]['inventory_hostname_short'] | default(peer_host.split('-')[0]) }} ({{ hostvars[peer_host]['ansible_host'] }})
+[Peer]
+PublicKey = {{ hostvars[peer_host]['wg_public_key_content'] }}
+Endpoint = {{ hostvars[peer_host]['ansible_host'] }}:{{ wg_listen_port }}
+AllowedIPs = {{ hostvars[peer_host]['wireguard_ip'] }}/32
+PersistentKeepalive = 25
+{% endif %}
+{% endfor %}

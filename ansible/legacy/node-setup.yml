@@ -1,0 +1,34 @@
+---
+# Playbook principal para configuración inicial de nodos K3s
+# Este playbook reemplaza toda la lógica que estaba en cloud-init
+- name: Configuración completa de nodos para cluster K3s
+  hosts: all
+  become: yes
+  gather_facts: yes
+  
+  roles:
+    - packages      # Instalar y actualizar paquetes del sistema
+    - users         # Configurar usuarios y autenticación SSH
+    - security      # Configurar SSH hardening, fail2ban y firewall
+    - system        # Configurar kernel, timezone y optimizaciones
+  
+  post_tasks:
+    - name: Verificar que todos los servicios críticos están funcionando
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - ssh
+        - fail2ban
+      
+    - name: Mostrar resumen de configuración
+      debug:
+        msg: |
+          Nodo configurado exitosamente:
+          - Usuario administrador: {{ admin_user }}
+          - Puerto SSH: {{ ssh_port }}
+          - Firewall: habilitado
+          - Fail2ban: activo
+          - Sistema optimizado para K3s
+          - Listo para despliegue de K3s 

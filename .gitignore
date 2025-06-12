@@ -1,0 +1,199 @@
+# ==========================================
+# DIGITECH SEAWEEDFS K3S PROJECT - .gitignore
+# ==========================================
+# Archivo principal de exclusiones para el repositorio
+
+# ==========================================
+# ARCHIVOS DE SECRETOS Y CREDENCIALES
+# ==========================================
+# Archivos de contraseñas del vault (NUNCA commitear)
+.vault_pass
+.vault_password
+vault_pass.txt
+vault_password.txt
+
+# Archivos de secretos sin cifrar (NUNCA commitear)
+**/secrets.yml
+**/vault.yml.decrypted
+**/passwords.yml
+**/credentials.yml
+
+# Variables de entorno con secretos
+.env
+.env.local
+.env.production
+*.env
+
+# Archivos de configuración con tokens reales
+config_production.yml
+inventory_production.ini
+hosts_production.yml
+
+# Script con token hardcodeado (temporal)
+k8s/scaling/create-hcloud-config.sh
+
+# Archivos con información sensible adicional
+Makefile_complete
+deploy.sh
+k8s/scaling/k3s-agent-cloud-init.yaml
+
+# Archivos con información personal/dominio específico
+k8s/service/traefik-helmchartconfig-patch.yaml
+k8s/service/letsencrypt-clusterissuer.yaml
+k8s/service/seaweedfs-filer-ingress.yaml
+k8s/ocis/ocis-custom-value/ocis-custom-values.yaml
+k8s/seaweedfs/seaweedfs-values.yaml
+k8s/stack-observabilidad/grafana-ingress.yaml
+k8s/stack-observabilidad/grafana-values.yaml
+ansible/group_vars/all/vars.yml
+
+# Claves SSH personales
+ansible/files/ciberpadron_authorized_keys
+ansible/files/*_authorized_keys
+
+# Repositorios Git embebidos
+k8s/ocis/ocis-charts/
+
+# ==========================================
+# CLAVES SSH Y CERTIFICADOS
+# ==========================================
+# Claves SSH privadas
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.crt
+*.csr
+*.p12
+*.pfx
+
+# Certificados Let's Encrypt
+certbot/
+letsencrypt/
+
+# ==========================================
+# ARCHIVOS DE KUBERNETES
+# ==========================================
+# Kubeconfig con credenciales reales
+kubeconfig
+kubeconfig.*
+*.kubeconfig
+.kube/config
+
+# Secretos de Kubernetes sin cifrar
+k8s-secrets/
+kubernetes-secrets/
+
+# ==========================================
+# TERRAFORM
+# ==========================================
+# Archivos de estado de Terraform (pueden contener secretos)
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+terraform.tfplan.*
+
+# ==========================================
+# ANSIBLE
+# ==========================================
+# Archivos de retry de Ansible
+*.retry
+
+# Archivos de log de Ansible
+ansible.log
+*.log
+
+# Archivos temporales de Ansible
+.tmp/
+tmp/
+temp/
+
+# Cache de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# ==========================================
+# ARCHIVOS DE DESARROLLO Y TESTING
+# ==========================================
+# Archivos de test con datos reales
+test_with_real_data.*
+debug_*
+personal_*
+dev_*
+
+# Archivos de backup
+*.bak
+*.backup
+*~
+
+# ==========================================
+# ARCHIVOS DE EDITOR
+# ==========================================
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*#
+.#*
+
+# VS Code
+.vscode/settings.json
+.vscode/launch.json
+
+# JetBrains IDEs
+.idea/
+
+# ==========================================
+# ARCHIVOS DEL SISTEMA OPERATIVO
+# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ==========================================
+# ARCHIVOS ESPECÍFICOS DEL PROYECTO
+# ==========================================
+# Archivos generados dinámicamente
+generated_*
+dynamic_*
+
+# Archivos de estado de despliegue
+deployment_state.yml
+last_run.yml
+
+# Logs específicos del proyecto
+logs/
+*.log
+
+# Archivos temporales de scripts
+/tmp/
+temp_*
+
+# ==========================================
+# DIRECTORIOS DE DATOS SENSIBLES
+# ==========================================
+# Datos de aplicaciones
+data/
+volumes/
+storage/
+
+# Backups de bases de datos
+*.sql
+*.dump
+backups/ 

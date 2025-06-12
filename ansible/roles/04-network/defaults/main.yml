@@ -1,0 +1,14 @@
+---
+# Variables por defecto para el rol 04-network
+# Configuración de Tailscale
+
+# Configuración de Tailscale
+tailscale_auth_key: "{{ tailscale_auth_key_vault }}"  # Definido en vault.yml
+tailscale_hostname: "{{ inventory_hostname }}"
+tailscale_advertise_routes: []  # Rutas a anunciar (opcional)
+tailscale_accept_routes: true   # Aceptar rutas de otros nodos
+tailscale_accept_dns: true      # Usar DNS de Tailscale
+tailscale_shields_up: false     # Modo escudo (bloquear conexiones entrantes)
+
+# Configuración adicional
+tailscale_extra_args: "--ssh"  # Habilitar SSH sobre Tailscale 

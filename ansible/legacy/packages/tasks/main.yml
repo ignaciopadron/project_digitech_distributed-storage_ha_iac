@@ -1,0 +1,32 @@
+---
+# Rol para instalación y gestión de paquetes
+- name: Actualizar caché de paquetes
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Actualizar todos los paquetes del sistema
+  apt:
+    upgrade: dist
+    autoremove: yes
+    autoclean: yes
+
+- name: Instalar paquetes básicos del sistema
+  apt:
+    name: "{{ basic_packages }}"
+    state: present
+
+- name: Instalar paquetes de seguridad
+  apt:
+    name: "{{ security_packages }}"
+    state: present
+
+- name: Instalar paquetes de red
+  apt:
+    name: "{{ network_packages }}"
+    state: present
+
+- name: Instalar herramientas de administración
+  apt:
+    name: "{{ admin_tools }}"
+    state: present 

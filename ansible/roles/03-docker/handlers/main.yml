@@ -1,0 +1,7 @@
+---
+# Handlers para el rol 03-docker
+
+- name: Restart Docker
+  service:
+    name: docker
+    state: restarted 

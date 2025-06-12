@@ -1,0 +1,74 @@
+# prometheus-values.yaml - CONFIGURACIÓN minimalista
+# Solo métricas básicas del cluster, sin logs
+alertmanager: { enabled: false }
+grafana: { enabled: false }
+# Deshabilitar node-exporter para reducir carga
+nodeExporter: { enabled: false }
+# Deshabilitar kube-state-metrics para reducir métricas
+kubeStateMetrics: { enabled: false }
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    resources:
+      requests: { cpu: 20m, memory: 300Mi }
+      limits: { memory: 350Mi }  # QoS Guaranteed
+    maximumStartupDurationSeconds: 1200  # 20 minutos para startup
+    retention: 3h  # Solo 3 horas de retención
+    retentionSize: "100MB"  # Mínimo almacenamiento
+    scrapeInterval: "300s"  # Scraping cada 5 minutos (muy relajado)
+    evaluationInterval: "300s"  # Evaluación cada 5 minutos
+    # Health checks permisivos
+    livenessProbe:
+      httpGet:
+        path: /-/healthy
+        port: http-web
+      initialDelaySeconds: 180
+      periodSeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 10
+    readinessProbe:
+      httpGet:
+        path: /-/ready
+        port: http-web
+      initialDelaySeconds: 180
+      periodSeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 5
+    startupProbe:
+      httpGet:
+        path: /-/ready
+        port: http-web
+      initialDelaySeconds: 0
+      periodSeconds: 60
+      timeoutSeconds: 30
+      failureThreshold: 60  # 60 * 60s = 60 minutos máximo
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: "local-path"
+          accessModes: ["ReadWriteOnce"]
+          resources: { requests: { storage: 1Gi } }  # Reducido a 1Gi
+    # Solo métricas básicas de Kubernetes
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: { matchLabels: { release: prometheus } }
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: { matchLabels: { release: prometheus } }
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector: { matchLabels: { release: prometheus } }
+    # Optimizaciones máximas
+    disableCompaction: true  # Deshabilitar compactación para reducir CPU
+    walCompression: true
+prometheusOperator:
+  resources:
+    requests: { cpu: 15m, memory: 32Mi }  # Recursos mínimos
+    limits: { memory: 32Mi }
+# DESACTIVAR TODO excepto lo básico de Kubernetes
+kubeApiServer: { enabled: false }
+kubeControllerManager: { enabled: false }
+coreDns: { enabled: false }
+kubeEtcd: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }
+kubelet: { enabled: false }
+# Sin reglas de alertas
+defaultRules: { create: false } 

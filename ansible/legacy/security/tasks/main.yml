@@ -1,0 +1,64 @@
+---
+# Rol para configuración de seguridad (SSH, fail2ban, firewall)
+- name: Configurar SSH con hardening
+  template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    backup: yes
+    mode: '0644'
+    owner: root
+    group: root
+  notify: Restart SSH service
+
+- name: Configurar fail2ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+    owner: root
+    group: root
+  notify: Restart fail2ban
+
+- name: Habilitar y iniciar fail2ban
+  systemd:
+    name: fail2ban
+    enabled: yes
+    state: started
+
+- name: Reiniciar UFW (reset)
+  ufw:
+    state: reset
+    policy: allow
+
+- name: Configurar políticas por defecto de UFW
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: 'incoming', policy: 'deny' }
+    - { direction: 'outgoing', policy: 'allow' }
+
+- name: Permitir puertos TCP necesarios en UFW
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+  loop: "{{ ufw_allowed_ports_tcp }}"
+
+- name: Permitir puertos UDP necesarios en UFW
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: udp
+  loop: "{{ ufw_allowed_ports_udp }}"
+
+- name: Habilitar UFW
+  ufw:
+    state: enabled
+
+- name: Configurar límites del sistema
+  lineinfile:
+    path: /etc/security/limits.conf
+    line: "{{ item }}"
+    create: yes
+  loop: "{{ system_limits }}" 

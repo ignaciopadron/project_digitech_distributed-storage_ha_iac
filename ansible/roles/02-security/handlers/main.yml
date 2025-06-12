@@ -1,0 +1,12 @@
+---
+# Handlers para el rol 02-security
+
+- name: Restart SSH service
+  service:
+    name: "{{ ssh_service_name }}"
+    state: restarted
+
+- name: Restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted 

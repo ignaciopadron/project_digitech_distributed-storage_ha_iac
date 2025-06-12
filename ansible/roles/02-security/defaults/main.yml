@@ -1,0 +1,69 @@
+---
+# Variables por defecto para el rol 02-security
+# Configuración de seguridad (SSH, fail2ban, firewall)
+
+# Configuración SSH (ssh_port se define en group_vars/all/vars.yml)
+ssh_permit_root_login: "no"
+ssh_password_authentication: "no"
+ssh_pubkey_authentication: "yes"
+ssh_service_name: ssh
+
+# Configuración fail2ban
+fail2ban_bantime: 1h
+fail2ban_findtime: 10m
+fail2ban_maxretry: 5
+fail2ban_ssh_maxretry: 3
+
+# Puertos permitidos en UFW
+ufw_allowed_ports_tcp:
+  # Administración y acceso básico
+  - "{{ ssh_port }}"  # SSH (variable global)
+  - "80"              # HTTP
+  - "443"             # HTTPS
+  
+  # Kubernetes Control Plane
+  - "6443"            # Kubernetes API Server (acceso externo con kubectl)
+  - "2379"            # etcd server client API (HA clusters)
+  - "2380"            # etcd server peer API (HA clusters)
+  - "10250"           # Kubelet API (server a agente)
+  - "10251"           # kube-scheduler (solo localhost por defecto)
+  - "10252"           # kube-controller-manager (solo localhost por defecto)
+  
+  # Monitoreo y observabilidad
+  - "3000"            # Grafana
+  - "9090"            # Prometheus
+  - "3100"            # Loki
+  - "9093"            # Alertmanager
+  - "9100"            # Node Exporter
+  - "8080"            # cAdvisor (métricas de contenedores)
+  
+  # Aplicaciones específicas
+  - "9000"            # SeaweedFS Master
+  - "8080"            # SeaweedFS Volume Server (puede coincidir con cAdvisor)
+  - "8888"            # SeaweedFS Filer
+  - "9333"            # SeaweedFS Master (puerto adicional)
+
+ufw_allowed_ports_udp:
+  # Networking de Kubernetes
+  - "8472"            # Flannel VXLAN (CNI por defecto de K3s)
+  
+  # Tailscale (si se necesita acceso directo)
+  - "41641"           # Tailscale (puerto por defecto)
+
+# Reglas específicas para interfaces de red
+ufw_interface_rules:
+  # Permitir todo el tráfico en la interfaz de Tailscale
+  - interface: "tailscale0"
+    direction: "in"
+    action: "allow"
+  # Permitir todo el tráfico en la interfaz de Docker
+  - interface: "docker0"
+    direction: "in"
+    action: "allow"
+
+# Límites del sistema
+system_limits:
+  - "* soft nofile 65536"
+  - "* hard nofile 65536"
+  - "* soft nproc 65536"
+  - "* hard nproc 65536" 

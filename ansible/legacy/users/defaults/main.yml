@@ -1,0 +1,10 @@
+---
+# Variables por defecto para el rol de usuarios
+# Estas variables pueden ser sobrescritas en group_vars o host_vars
+
+# Configuración del usuario administrador
+# admin_user se define en group_vars/all/vars.yml como variable global
+ssh_public_key_path: ~/.ssh/id_rsa.pub
+
+# Configuración de sudo
+sudo_nopasswd: true 

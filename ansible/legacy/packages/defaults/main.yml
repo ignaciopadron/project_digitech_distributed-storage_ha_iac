@@ -1,0 +1,26 @@
+---
+# Variables por defecto para el rol de paquetes
+# Estas variables pueden ser sobrescritas en group_vars o host_vars
+
+# Paquetes básicos del sistema organizados por categoría
+basic_packages:
+  - curl
+  - wget
+  - apt-transport-https
+  - ca-certificates
+  - gnupg
+  - lsb-release
+  - software-properties-common
+  - python3-pip  # Necesario para algunos módulos de Ansible
+
+security_packages:
+  - ufw
+  - fail2ban
+
+network_packages:
+  - wireguard
+  - wireguard-tools
+  - net-tools
+
+admin_tools:
+  - htop 

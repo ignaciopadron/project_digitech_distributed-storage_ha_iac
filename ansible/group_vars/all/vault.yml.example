@@ -1,0 +1,86 @@
+# vault.yml.example
+# ===================
+# Archivo de ejemplo para mostrar las variables requeridas en vault.yml
+# Copia este archivo a vault.yml y encríptalo con: ansible-vault encrypt vault.yml
+
+# ===========================================
+# SECRETOS DE SEAWEEDFS (S3 Compatible)
+# ===========================================
+# Credenciales para OCIS conectar a SeaweedFS como backend S3
+seaweedfs_s3_access_key: "ocisaccesskey"
+seaweedfs_s3_secret_key: "ocissecretkey123!"
+
+# Credenciales de administrador de SeaweedFS S3
+seaweedfs_s3_admin_access_key: "seaweedfs-admin"
+seaweedfs_s3_admin_secret_key: "seaweedfs-secret123!"
+
+# JWT signing key para SeaweedFS (para autenticación interna)
+seaweedfs_jwt_signing_key: "mi-jwt-signing-key-super-secreta-2024"
+
+# ===========================================
+# SECRETOS DE OCIS
+# ===========================================
+# Usuario administrador de OCIS
+ocis_admin_user: "admin"
+ocis_admin_password: "admin123!"
+
+# ===========================================
+# SECRETOS DE GRAFANA
+# ===========================================
+# Usuario administrador de Grafana
+grafana_admin_user: "admin"
+grafana_admin_password: "grafana123!"
+
+# ===========================================
+# SECRETOS DE ESCALABILIDAD (HETZNER CLOUD)
+# ===========================================
+# Token de API de Hetzner Cloud para cluster autoscaler
+hcloud_token: "tu-hetzner-cloud-token-aqui"
+
+# Configuración de nodos para escalabilidad
+hcloud_server_type: "cx22"
+hcloud_location: "fsn1"
+hcloud_ssh_key: "cluster-k3s-ssh"
+
+# ===========================================
+# SECRETOS DE K3S CLUSTER
+# ===========================================
+# Token para unir nodos al cluster K3s
+k3s_token: "tu-k3s-token-super-secreto"
+k3s_master_ip: "100.100.75.127"  # IP de Tailscale del nodo master
+
+# ===========================================
+# SECRETOS DE TAILSCALE
+# ===========================================
+# Auth key de Tailscale para conectar nuevos nodos automáticamente
+tailscale_auth_key: "tskey-auth-tu-auth-key-aqui"
+
+# ===========================================
+# OTRAS VARIABLES DE INFRAESTRUCTURA
+# ===========================================
+# Agregar aquí otras variables sensibles como:
+# - Claves SSH adicionales
+# - Tokens de API de otros servicios
+# - Certificados personalizados
+# - Passwords de bases de datos externas
+# - Webhooks y secrets de CI/CD
+# etc.
+
+# Ejemplo de variables adicionales:
+# docker_registry_password: "password-para-registry-privado"
+# backup_encryption_key: "clave-para-cifrar-backups"
+# webhook_secret: "secret-para-webhooks-github"
+
+# ===========================================
+# NOTAS IMPORTANTES:
+# ===========================================
+# 1. Después de editar este archivo, renómbralo a vault.yml
+# 2. Encríptalo con: ansible-vault encrypt group_vars/all/vault.yml  
+# 3. Para editarlo: ansible-vault edit group_vars/all/vault.yml
+# 4. Las variables definidas aquí serán usadas por k8s-secrets-setup.yml
+# 5. Los valores por defecto en el playbook son solo fallbacks de desarrollo
+# 6. NUNCA commitees este archivo sin encriptar al repositorio
+# 7. Para obtener tokens reales:
+#    - Hetzner Cloud: https://console.hetzner.cloud/ > API Tokens
+#    - Tailscale: https://login.tailscale.com/admin/settings/keys
+#    - K3S Token: Se genera automáticamente en /var/lib/rancher/k3s/server/node-token 

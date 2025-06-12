@@ -1,0 +1,17 @@
+# filer-service-for-ingress.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: seaweedfs-filer-loadbalancer
+  namespace: seaweedfs
+spec:
+  type: ClusterIP
+  selector:
+    # Selector actualizado para coincidir con las etiquetas del pod
+    app.kubernetes.io/name: seaweedfs
+    app.kubernetes.io/component: filer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8888
+      targetPort: 8888

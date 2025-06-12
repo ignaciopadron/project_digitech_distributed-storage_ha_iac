@@ -1,0 +1,51 @@
+---
+# Rol para configuración del sistema (kernel, timezone, optimizaciones)
+- name: Configurar timezone
+  timezone:
+    name: "{{ system_timezone }}"
+
+- name: Configurar parámetros del kernel para Kubernetes
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+  loop: "{{ kernel_parameters }}"
+
+- name: Cargar módulos del kernel requeridos
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kernel_modules }}"
+
+- name: Configurar módulos para cargar al inicio
+  lineinfile:
+    path: /etc/modules-load.d/k3s.conf
+    line: "{{ item }}"
+    create: yes
+  loop: "{{ kernel_modules }}"
+
+- name: Deshabilitar swap
+  command: swapoff -a
+  ignore_errors: yes
+
+- name: Eliminar entradas de swap de /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '.*swap.*'
+    state: absent
+
+- name: Crear directorio para WireGuard
+  file:
+    path: "{{ wireguard_config_path }}"
+    state: directory
+    mode: "{{ wireguard_config_mode }}"
+    owner: root
+    group: root
+
+- name: Crear archivo de estado de configuración
+  copy:
+    content: "Node initialized successfully by Ansible. Ready for K3s deployment."
+    dest: /var/log/ansible-configuration-status.log
+    mode: '0644' 

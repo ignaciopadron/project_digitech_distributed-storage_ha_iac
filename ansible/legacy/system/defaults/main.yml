@@ -1,0 +1,22 @@
+---
+# Variables por defecto para el rol de sistema
+# Estas variables pueden ser sobrescritas en group_vars o host_vars
+
+# Configuración de timezone
+system_timezone: Europe/Madrid
+
+# Parámetros del kernel para Kubernetes
+kernel_parameters:
+  - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+  - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+  - { key: 'net.ipv4.ip_forward', value: '1' }
+  - { key: 'vm.swappiness', value: '1' }
+
+# Módulos del kernel requeridos
+kernel_modules:
+  - br_netfilter
+  - overlay
+
+# Configuración de WireGuard
+wireguard_config_path: "/etc/wireguard"
+wireguard_config_mode: "0700" 

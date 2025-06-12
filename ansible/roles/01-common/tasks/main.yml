@@ -1,0 +1,127 @@
+---
+# Rol 01-common: Configuración básica del sistema, usuarios y paquetes
+
+# ==========================================
+# GESTIÓN DE PAQUETES
+# ==========================================
+- name: Actualizar caché de paquetes
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Actualizar todos los paquetes del sistema
+  apt:
+    upgrade: dist
+    autoremove: yes
+    autoclean: yes
+
+- name: Instalar paquetes Python necesarios para Ansible
+  apt:
+    name:
+      - python3-pip
+      - python3-docker
+    state: present
+
+- name: Instalar PyUFW para el módulo UFW de Ansible
+  pip:
+    name:
+      - PyUFW
+    state: present
+
+- name: Instalar paquetes básicos del sistema
+  apt:
+    name: "{{ basic_packages }}"
+    state: present
+
+- name: Instalar paquetes de seguridad
+  apt:
+    name: "{{ security_packages }}"
+    state: present
+
+- name: Instalar paquetes de red
+  apt:
+    name: "{{ network_packages }}"
+    state: present
+
+- name: Instalar herramientas de administración
+  apt:
+    name: "{{ admin_tools }}"
+    state: present
+
+# ==========================================
+# GESTIÓN DE USUARIOS
+# ==========================================
+- name: Crear el usuario administrador
+  user:
+    name: "{{ admin_user }}"
+    shell: /bin/bash
+    groups: 
+      - sudo
+      - adm
+    append: yes
+    state: present
+    createhome: yes
+
+- name: Configurar sudoers sin contraseña para el usuario administrador
+  lineinfile:
+    path: /etc/sudoers.d/{{ admin_user }}
+    line: "{{ admin_user }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Copiar clave pública SSH para el usuario administrador
+  authorized_key:
+    user: "{{ admin_user }}"
+    key: "{{ lookup('file', ssh_public_key_path) }}"
+    state: present
+
+- name: Deshabilitar autenticación por contraseña para root
+  user:
+    name: root
+    password_lock: yes
+
+# ==========================================
+# CONFIGURACIÓN DEL SISTEMA
+# ==========================================
+- name: Configurar timezone
+  timezone:
+    name: "{{ system_timezone }}"
+
+- name: Configurar parámetros del kernel para Kubernetes
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+  loop: "{{ kernel_parameters }}"
+
+- name: Cargar módulos del kernel requeridos
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kernel_modules }}"
+
+- name: Configurar módulos para cargar al inicio
+  lineinfile:
+    path: /etc/modules-load.d/k3s.conf
+    line: "{{ item }}"
+    create: yes
+  loop: "{{ kernel_modules }}"
+
+- name: Deshabilitar swap
+  command: swapoff -a
+  ignore_errors: yes
+
+- name: Eliminar entradas de swap de /etc/fstab
+  lineinfile:
+    path: /etc/fstab
+    regexp: '.*swap.*'
+    state: absent
+
+- name: Crear archivo de estado de configuración
+  copy:
+    content: "Node initialized successfully by Ansible. Ready for K3s deployment."
+    dest: /var/log/ansible-configuration-status.log
+    mode: '0644' 

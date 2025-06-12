@@ -1,0 +1,16 @@
+---
+# Variables por defecto para el rol de network
+# Estas variables pueden ser sobrescritas en group_vars o host_vars
+
+# Configuración de WireGuard
+wg_interface_name: "wg0"
+wg_config_path: "/etc/wireguard"
+wg_listen_port: 51820
+
+# Archivos de claves WireGuard (se generarán en los nodos)
+wg_private_key_file: "{{ wg_config_path }}/privatekey"
+wg_public_key_file: "{{ wg_config_path }}/publickey"
+
+# Puertos adicionales para WireGuard en UFW
+wg_ufw_ports:
+  - "{{ wg_listen_port }}/udp" 

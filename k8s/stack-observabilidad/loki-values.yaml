@@ -1,0 +1,85 @@
+# loki-values.yaml - Configuración OPTIMIZADA con mejores prácticas
+# QoS Guaranteed para componentes críticos, CPU sin límites para bursts
+
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: 'filesystem'
+  schemaConfig:
+    configs:
+    - from: "2024-01-01"
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: loki_index_
+        period: 24h
+  limits_config:
+    retention_period: 8h  # Aumentado ligeramente de 6h a 8h
+    ingestion_rate_mb: 6  # Aumentado ligeramente de 4 a 6
+    ingestion_burst_size_mb: 8  # Aumentado ligeramente de 6 a 8
+    max_cache_freshness_per_query: 10m
+    split_queries_by_interval: 15m
+    max_query_parallelism: 16
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m      # CPU solo request para permitir bursts
+      memory: 160Mi # Memory request = limit para QoS Guaranteed
+    limits:
+      memory: 160Mi # Solo memory limit = request para QoS Guaranteed
+  persistence:
+    size: 2Gi
+    storageClass: local-path
+
+# Desactivar componentes innecesarios
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# DESACTIVAR CACHES PROBLEMÁTICOS para reducir consumo de recursos
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+gateway:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m      # CPU solo request para permitir bursts
+      memory: 48Mi  # Memory request = limit para QoS Guaranteed
+    limits:
+      memory: 48Mi  # Solo memory limit = request para QoS Guaranteed
+
+# Configuración de monitoreo mínima
+monitoring:
+  serviceMonitor:
+    enabled: false
+  selfMonitoring:
+    enabled: false
+    grafanaAgent:
+      installOperator: false
+
+# Configuración de logs mínima
+test:
+  enabled: false
+
+lokiCanary:
+  enabled: true
+  resources:
+    requests:
+      cpu: 10m      # CPU solo request para permitir bursts
+      memory: 24Mi  # Memory request = limit para QoS Guaranteed
+    limits:
+      memory: 24Mi  # Solo memory limit = request para QoS Guaranteed 
