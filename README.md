@@ -1,4 +1,6 @@
-# 🚀 Almacenamiento distribuido con SeaweedFS y OwnCloud Infinite Scale levantado con IaC en un cluster de Kubernetes K3s con alta disponibilidad y tolerancia a fallos y con una estrategia de escalabilidad horizontal automatizada
+# 🚀 Almacenamiento distribuido con SeaweedFS y OwnCloud Infinite Scale
+#    levantado con IaC en un cluster de Kubernetes K3s con alta disponibilidad y tolerancia a fallos
+#    con una estrategia de escalabilidad horizontal automatizada.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
