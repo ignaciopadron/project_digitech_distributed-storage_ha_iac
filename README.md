@@ -6,7 +6,12 @@
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-blue.svg)](https://k3s.io/)
 [![Tailscale](https://img.shields.io/badge/Network-Tailscale-purple.svg)](https://tailscale.com/)
 
-> **Infraestructura como Código para un cluster K3s altamente disponible con SeaweedFS, monitoreo completo y autoescalado en Hetzner Cloud**
+> **Almacenamiento distribuido con SeaweedFS y OwnCloud Infinite Scale levantado con IaC (Terraform y Ansible) en un cluster de Kubernetes K3s con alta disponibilidad y tolerancia a fallos, stack de monitoreo Prometheus, Grafana, estrategia de escalabilidad Horizontal automatizada con Cluster-Autoscaler + HPA + Cloud-init en Hetzner Clou**
+
+
+> **Tuve algún problema con GoogleDrive en el explorador Gnome en Ubuntu (linux), entonces pensé en levantar mi propia intraestructura para tener mis recursos sin problemas.**
+> **En un mundo donde los cambios son cada vez más rápidos el coste de oportunidad se vuelve decisivo. Llegar tarde sería como no llegar. Por tanto, tener acceso a tus recursos sin interrupciones, es decir, con alta disponibilidad y tolerancia a fallos ya es algo tan importante como el servicio que se ofrece.**
+> **La soberanía digital y tecnológica de los recursos que usas garantiza la autonomía y aborda las vulnerabilidades con respecto a infraestructuras críticas, reduciendo el riesgo y la dependencia a empresas extranjeras.**
 
 ## 📋 Descripción
 
