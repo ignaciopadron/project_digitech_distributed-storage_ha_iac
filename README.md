@@ -1,6 +1,7 @@
 # 🚀 DigiTech SeaweedFS K3s Cluster
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
 [![Ansible](https://img.shields.io/badge/Ansible-2.15+-red.svg)](https://www.ansible.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-blue.svg)](https://k3s.io/)
 [![Tailscale](https://img.shields.io/badge/Network-Tailscale-purple.svg)](https://tailscale.com/)
@@ -11,18 +12,24 @@
 
 Este proyecto implementa una infraestructura completa de Kubernetes (K3s) con:
 
-- **🔧 Automatización completa** con Ansible
+- **🏗️ Provisioning con Terraform** para Hetzner Cloud (servidores, redes, SSH keys)
+- **🔧 Automatización completa** con Ansible (configuración, despliegue, seguridad)
+- **📈 Autoescalado inteligente** con Cluster Autoscaler y HPA (Horizontal Pod Autoscaler)
+- **☁️ Inicialización automática** con cloud-init para nodos worker dinámicos
 - **📊 Stack de monitoreo** (Prometheus, Grafana, Loki)
-- **💾 Almacenamiento distribuido** con SeaweedFS
-- **🔒 Seguridad robusta** con Tailscale VPN
-- **📈 Autoescalado** en Hetzner Cloud
-- **🌐 Gestión de certificados** con cert-manager
-- **☁️ Colaboración** con OCIS (ownCloud Infinite Scale)
+- **💾 Almacenamiento distribuido** con SeaweedFS compatible S3
+- **🔒 Seguridad robusta** con Tailscale VPN mesh network
+- **🌐 Gestión de certificados** con cert-manager y Let's Encrypt
+- **☁️ Colaboración empresarial** con OCIS (ownCloud Infinite Scale)
+- **🚀 Escalado horizontal** automático basado en métricas de CPU/memoria
 
 ## 🏗️ Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
+│                 Hetzner Cloud Infrastructure                │
+│                    (Terraform Managed)                     │
+├─────────────────────────────────────────────────────────────┤
 │                    Tailscale VPN Network                    │
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
@@ -44,10 +51,38 @@ Este proyecto implementa una infraestructura completa de Kubernetes (K3s) con:
                     └─────────────────────┘
 ```
 
+## 🔧 Tecnologías Clave
+
+### 🏗️ Terraform
+- **Provisioning** de infraestructura en Hetzner Cloud
+- **Gestión de estado** centralizada y versionada
+- **Creación automática** de servidores, redes y SSH keys
+- **Outputs** para integración con Ansible
+
+### 📈 Cluster Autoscaler
+- **Escalado automático** de nodos worker
+- **Integración nativa** con Hetzner Cloud API
+- **Optimización de costos** eliminando nodos no utilizados
+- **Configuración declarativa** via Kubernetes manifests
+
+### 📊 HPA (Horizontal Pod Autoscaler)
+- **Escalado de pods** basado en métricas
+- **Soporte para CPU, memoria** y métricas personalizadas
+- **Integración** con metrics-server y Prometheus
+- **Configuración por aplicación** con targets específicos
+
+### ☁️ Cloud-Init
+- **Inicialización automática** de instancias en Hetzner Cloud
+- **Scripts de configuración** ejecutados al boot
+- **Instalación de Tailscale** y unión a la red VPN
+- **Configuración de K3s agent** con parámetros específicos
+- **Metadata de Hetzner** para provider-id y etiquetas
+
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
 
+- **Terraform** 1.0+
 - **Ansible** 2.15+
 - **Python** 3.8+
 - **kubectl** (para gestión del cluster)
@@ -58,31 +93,35 @@ Este proyecto implementa una infraestructura completa de Kubernetes (K3s) con:
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/ignaciopadron/digitech-seaweedfs-k3s.git
-cd digitech-seaweedfs-k3s
+git clone https://github.com/ignaciopadron/project_digitech_distributed-storage_ha_iac.git
+cd project_digitech_distributed-storage_ha_iac
 ```
 
 ### 2. Configurar Variables de Entorno
 
 ```bash
-# Copiar archivo de ejemplo
-cp ansible/group_vars/all/vault.yml.example ansible/group_vars/all/vault.yml
+# Variables de Terraform
+export HCLOUD_TOKEN="tu-hetzner-cloud-token"
+export TF_VAR_hcloud_token="$HCLOUD_TOKEN"
 
-# Editar con tus credenciales
+# Variables de Ansible
+cp ansible/group_vars/all/vault.yml.example ansible/group_vars/all/vault.yml
 ansible-vault edit ansible/group_vars/all/vault.yml
 ```
 
-### 3. Configurar Inventario
+### 3. Desplegar Infraestructura con Terraform
 
 ```bash
-# Editar el inventario con tus servidores
-vim ansible/inventory.yml
+cd terraform
+terraform init
+terraform plan
+terraform apply
 ```
 
-### 4. Desplegar el Cluster
+### 4. Configurar Cluster con Ansible
 
 ```bash
-# Flujo recomendado
+# Flujo recomendado usando Makefile
 make config      # Configurar servidores y desplegar K3s
 make secrets     # Crear secretos de Kubernetes
 make deploy-apps # Desplegar aplicaciones
@@ -91,8 +130,13 @@ make deploy-apps # Desplegar aplicaciones
 ## 📁 Estructura del Proyecto
 
 ```
-digitech-seaweedfs-k3s/
-├── ansible/                    # Automatización con Ansible
+project_digitech_distributed-storage_ha_iac/
+├── terraform/                  # 🏗️ Infraestructura como código
+│   ├── main.tf                # Configuración principal de Hetzner Cloud
+│   ├── variables.tf           # Variables de Terraform
+│   ├── outputs.tf             # Outputs para Ansible
+│   └── inventory.tpl          # Template de inventario
+├── ansible/                    # 🔧 Automatización con Ansible
 │   ├── roles/                  # Roles organizados por función
 │   │   ├── 01-common/         # Configuración básica del sistema
 │   │   ├── 02-security/       # SSH, firewall, fail2ban
@@ -103,17 +147,33 @@ digitech-seaweedfs-k3s/
 │   ├── templates/             # Plantillas de configuración
 │   ├── playbook.yml           # Playbook principal
 │   └── k8s-secrets-setup.yml  # Gestión de secretos
-├── k8s/                       # Manifiestos de Kubernetes
+├── k8s/                       # 📦 Manifiestos de Kubernetes
 │   ├── scaling/               # Configuración de autoescalado
-│   └── apps/                  # Aplicaciones del cluster
-├── terraform/                 # Infraestructura como código
-├── scripts/                   # Scripts de utilidad
-└── Makefile                   # Comandos de automatización
+│   ├── seaweedfs/             # Almacenamiento distribuido
+│   ├── stack-observabilidad/  # Monitoreo (Prometheus, Grafana, Loki)
+│   └── service/               # Servicios e ingress
+├── scripts/                   # 🛠️ Scripts de utilidad
+└── Makefile                   # 🎯 Comandos de automatización
 ```
 
 ## 🔧 Configuración
 
-### Variables Principales
+### Variables de Terraform
+
+Configura las variables en `terraform/terraform.tfvars`:
+
+```hcl
+# Hetzner Cloud
+hcloud_token = "tu-hetzner-cloud-token"
+server_type = "cx22"
+location = "fsn1"
+ssh_key_name = "tu-clave-ssh"
+
+# Configuración del cluster
+node_count = 3
+```
+
+### Variables de Ansible
 
 Las variables sensibles se almacenan en `ansible/group_vars/all/vault.yml` (encriptado):
 
@@ -151,6 +211,7 @@ El proyecto utiliza **Tailscale** para crear una red privada segura entre todos 
 
 ### Características de Seguridad
 
+- **🏗️ Terraform State**: Gestión segura del estado de infraestructura
 - **🔐 SSH Hardening**: Puerto personalizado, solo claves públicas
 - **🛡️ Firewall UFW**: Configuración restrictiva
 - **🚫 Fail2ban**: Protección contra ataques de fuerza bruta
@@ -182,17 +243,45 @@ El proyecto utiliza **Tailscale** para crear una red privada segura entre todos 
 
 ## 📈 Autoescalado
 
-El cluster incluye **cluster-autoscaler** para Hetzner Cloud:
+El cluster incluye un sistema completo de autoescalado en dos niveles:
 
-- **Escalado automático** basado en demanda de recursos
-- **Nodos worker** se crean/destruyen dinámicamente
-- **Configuración via cloud-init** con Tailscale
-- **Etiquetas automáticas** para identificación
+### 🔄 Cluster Autoscaler (Escalado de Nodos)
+- **Escalado automático** de nodos worker basado en demanda de recursos
+- **Integración nativa** con Hetzner Cloud API
+- **Creación/destrucción** dinámica de servidores según carga
+- **Configuración via cloud-init** con Tailscale y K3s preconfigurado
+- **Etiquetas automáticas** para identificación y balanceado
+
+### 📊 HPA - Horizontal Pod Autoscaler (Escalado de Pods)
+- **Escalado automático** de pods basado en métricas de CPU/memoria
+- **Configuración personalizable** por aplicación
+- **Integración** con Prometheus metrics
+- **Respuesta rápida** a picos de carga
+
+### ☁️ Cloud-Init para Nodos Worker
+- **Inicialización automática** de nuevos nodos
+- **Instalación y configuración** de Tailscale
+- **Unión automática** al cluster K3s
+- **Configuración de etiquetas** y roles específicos
+- **Script optimizado** para Hetzner Cloud metadata
+
+**Flujo de Autoescalado:**
+```
+Alta Demanda → HPA escala pods → Recursos insuficientes → 
+Cluster Autoscaler crea nodo → Cloud-init configura nodo → 
+Nodo se une al cluster → Pods se programan en nuevo nodo
+```
 
 ## 🛠️ Comandos Útiles
 
 ```bash
-# Gestión del cluster
+# Infraestructura con Terraform
+cd terraform
+terraform plan                    # Planificar cambios
+terraform apply                   # Aplicar infraestructura
+terraform destroy                 # Destruir infraestructura
+
+# Gestión del cluster con Ansible
 make config          # Configurar y desplegar K3s
 make secrets         # Crear secretos de K8s
 make deploy-apps     # Desplegar aplicaciones
