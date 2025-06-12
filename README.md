@@ -1,4 +1,4 @@
-# 🚀 DigiTech SeaweedFS K3s Cluster
+# 🚀 Almacenamiento distribuido con SeaweedFS y OwnCloud Infinite Scale levantado con IaC en un cluster de Kubernetes K3s con alta disponibilidad y tolerancia a fallos y con una estrategia de escalabilidad horizontal automatizada
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
@@ -10,7 +10,9 @@
 
 
 > **Tuve algún problema con GoogleDrive en el explorador Gnome en Ubuntu (linux), entonces pensé en levantar mi propia intraestructura para tener mis recursos sin problemas.**
+
 > **En un mundo donde los cambios son cada vez más rápidos el coste de oportunidad se vuelve decisivo. Llegar tarde sería como no llegar. Por tanto, tener acceso a tus recursos sin interrupciones, es decir, con alta disponibilidad y tolerancia a fallos ya es algo tan importante como el servicio que se ofrece.**
+
 > **La soberanía digital y tecnológica de los recursos que usas garantiza la autonomía y aborda las vulnerabilidades con respecto a infraestructuras críticas, reduciendo el riesgo y la dependencia a empresas extranjeras.**
 
 ## 📋 Descripción
