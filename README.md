@@ -12,7 +12,7 @@
 
 ## 💭 **Motivación Personal**
 
-> *"Como tuve algún problema con Google Drive en el explorador Gnome en Ubuntu (Linux), entoncesme propuse levantar mi propia infraestructura para tener mis recursos sin problemas."*
+> *"Como tuve algún problema con Google Drive en el explorador Gnome en Ubuntu (Linux), me propuse levantar mi propia infraestructura para tener mis recursos sin problemas."*
 
 > *"Vivimos en un mundo donde los cambios son cada vez más rápidos y el coste de oportunidad se vuelve decisivo. Llegar tarde sería como no llegar. Por tanto, tener acceso a tus recursos sin interrupciones, es decir, con alta disponibilidad y tolerancia a fallos, ya es algo tan importante como el servicio que se ofrece."*
 
