@@ -1,6 +1,5 @@
 # 🚀 Almacenamiento Distribuido con SeaweedFS y ownCloud Infinite Scale
 
-## 📡 Infraestructura como Código con K3s, Alta Disponibilidad y Escalabilidad Horizontal Automatizada
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Terraform](https://img.shields.io/badge/Terraform-1.0+-purple.svg)](https://www.terraform.io/)
@@ -12,11 +11,8 @@
 
 ## 💭 **Motivación Personal**
 
-> *"Como tuve algún problema con Google Drive en el explorador Gnome en Ubuntu (Linux), me propuse levantar mi propia infraestructura para tener mis recursos sin problemas."*
+> *"Hace un tiempo tuve problemas con Google Drivee usando el escritorio Gnome en ubuntu 24.04 (Linux). Esto me recordó algo clave: la nube pública al fin y al cabo es almacenar y gestionar nuestros recursos personales en el ordenador de otro. Así que me propuse crear mi propia infraestructura de almacenamiento, buscando autonomía, economía y estabilidad"*
 
-> *"Vivimos en un mundo donde los cambios son cada vez más rápidos y el coste de oportunidad se vuelve decisivo. Llegar tarde sería como no llegar. Por tanto, tener acceso a tus recursos sin interrupciones, es decir, con alta disponibilidad y tolerancia a fallos, ya es algo tan importante como el servicio que se ofrece."*
-
-> *"La dependencia de servicios en la nube que operan sobre la infraestructura de terceros extranjeros, plantea un desafío directo a la soberanía de lo que se supone que es tuyo, pero no lo es. La soberanía digital y tecnológica se convierte así en un pilar para mitigar vulnerabilidades con respecto a infraestructuras críticas que posiblitan el acceso a nuestros propios recursos. Reducir la dependencia de proveedores extranjeros garantiza la capacidad de tomar nuestras propias decisiones estratégicas."*
 
 ---
 
@@ -25,9 +21,9 @@
 **Solución completa de almacenamiento distribuido** desplegada con **Infrastructure as Code** en un cluster **Kubernetes K3s** con:
 - ✅ **Alta disponibilidad** y tolerancia a fallos
 - ✅ **Escalabilidad horizontal** automatizada (Cluster-Autoscaler + HPA + Cloud-init)
-- ✅ **Stack de monitoreo** completo (Prometheus, Grafana, Loki)
+- ✅ **Stack de monitoreo** completo (Prometheus, Grafana, Loki, FluentBit)
 - ✅ **Seguridad robusta** con Tailscale VPN
-- ✅ **Despliegue automatizado** en Hetzner Cloud
+- ✅ **Despliegue automatizado** 
 
 ## 📋 Descripción Técnica
 
