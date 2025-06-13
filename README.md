@@ -16,7 +16,7 @@
 
 > *"Vivimos en un mundo donde los cambios son cada vez más rápidos y el coste de oportunidad se vuelve decisivo. Llegar tarde sería como no llegar. Por tanto, tener acceso a tus recursos sin interrupciones, es decir, con alta disponibilidad y tolerancia a fallos, ya es algo tan importante como el servicio que se ofrece."*
 
-> *"La dependencia de servicios en la nube que operan sobre la infraestructura de terceros extranjeros, plantea un desafío directo a la soberanía de lo que se supone que es tuyo, pero no lo es. La soberanía digital y tecnológica se convierte así en un pilar para mitigar vulnerabilidades con respecto a infraestructuras críticas que posiblitan el acceso a nuestros propios recursos. Reducir la dependencia de proveedores extranjeros garantiza la capacidad de tomar nuestras propias decisiones estratégicas."
+> *"La dependencia de servicios en la nube que operan sobre la infraestructura de terceros extranjeros, plantea un desafío directo a la soberanía de lo que se supone que es tuyo, pero no lo es. La soberanía digital y tecnológica se convierte así en un pilar para mitigar vulnerabilidades con respecto a infraestructuras críticas que posiblitan el acceso a nuestros propios recursos. Reducir la dependencia de proveedores extranjeros garantiza la capacidad de tomar nuestras propias decisiones estratégicas."*
 
 ---
 
