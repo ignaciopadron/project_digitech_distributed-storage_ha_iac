@@ -22,14 +22,14 @@ seaweedfs_jwt_signing_key: "mi-jwt-signing-key-super-secreta-2024"
 # ===========================================
 # Usuario administrador de OCIS
 ocis_admin_user: "admin"
-ocis_admin_password: "admin123!"
+ocis_admin_password: "TU_PASSWORD_OCIS_SEGURO_AQUI"
 
 # ===========================================
 # SECRETOS DE GRAFANA
 # ===========================================
 # Usuario administrador de Grafana
 grafana_admin_user: "admin"
-grafana_admin_password: "grafana123!"
+grafana_admin_password: "TU_PASSWORD_GRAFANA_SEGURO_AQUI"
 
 # ===========================================
 # SECRETOS DE ESCALABILIDAD (HETZNER CLOUD)

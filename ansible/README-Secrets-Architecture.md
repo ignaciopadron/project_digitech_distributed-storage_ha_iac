@@ -35,11 +35,11 @@ seaweedfs_jwt_signing_key: "jwt-key-secreta"
 
 # OCIS
 ocis_admin_user: "admin"
-ocis_admin_password: "password-segura"
+ocis_admin_password: "TU_PASSWORD_OCIS_SEGURO"
 
 # Grafana
 grafana_admin_user: "admin"
-grafana_admin_password: "password-segura"
+grafana_admin_password: "TU_PASSWORD_GRAFANA_SEGURO"
 
 # Escalabilidad (Hetzner Cloud)
 hcloud_token: "tu-hetzner-token"

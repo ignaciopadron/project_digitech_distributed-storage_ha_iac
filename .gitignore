@@ -30,6 +30,7 @@ inventory_production.ini
 hosts_production.yml
 
 # Script con token hardcodeado (temporal)
+create-hcloud-config.sh
 k8s/scaling/create-hcloud-config.sh
 
 # Archivos con información sensible adicional

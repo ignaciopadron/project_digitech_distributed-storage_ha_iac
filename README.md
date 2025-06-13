@@ -232,9 +232,9 @@ tailscale_auth_key: "tskey-auth-tu-clave"
 k3s_token: "tu-k3s-token-secreto"
 
 # Credenciales de aplicaciones
-grafana_admin_password: "password-seguro"
-ocis_admin_password: "password-seguro"
-seaweedfs_s3_secret_key: "clave-s3-secreta"
+grafana_admin_password: "TU_PASSWORD_GRAFANA_SEGURO"
+ocis_admin_password: "TU_PASSWORD_OCIS_SEGURO"
+seaweedfs_s3_secret_key: "TU_SECRET_KEY_S3_SEGURO"
 ```
 
 ### Configuración de Red
